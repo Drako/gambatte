@@ -24,6 +24,7 @@
 
 struct SDL_Overlay;
 struct SDL_Surface;
+struct SDL_Window;
 
 class SdlBlitter {
 public:
@@ -36,7 +37,7 @@ public:
 	};
 
 	SdlBlitter(unsigned inwidth, unsigned inheight,
-	           int scale, bool yuv, bool full);
+	           int scale, bool full);
 	~SdlBlitter();
 	PixelBuffer inBuffer() const;
 	void draw();
@@ -46,9 +47,9 @@ public:
 private:
 	struct SurfaceDeleter;
 
-	SDL_Surface *screen_;
+	SDL_Window *screen_;
+	SDL_Surface *screen_surface_;
 	scoped_ptr<SDL_Surface, SurfaceDeleter> const surface_;
-	scoped_ptr<SDL_Overlay, SurfaceDeleter> const overlay_;
 
 	template<typename T> void swScale();
 };

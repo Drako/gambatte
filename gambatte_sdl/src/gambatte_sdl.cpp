@@ -270,7 +270,7 @@ struct InputId {
 	enum { type_key, type_jbutton, type_jaxis, type_jhat } type;
 	union {
 		JoyData jdata;
-		SDLKey keydata;
+		SDL_Keycode keydata;
 	};
 
 	InputId() : type(type_key), keydata() {}
@@ -383,7 +383,7 @@ void InputOption::exec(char const *const *argv, int index) {
 			}
 
 			ids_[i] = id;
-		} else if (SDLKey const *k = strToSdlkey(s)) {
+		} else if (SDL_Keycode const *k = strToSdlkey(s)) {
 			ids_[i].type = InputId::type_key;
 			ids_[i].keydata = *k;
 		}
@@ -484,7 +484,7 @@ public:
 	int exec(int argc, char const *const argv[]);
 
 private:
-	typedef std::multimap<SDLKey,  InputGetter::Button> keymap_t;
+	typedef std::multimap<SDL_Keycode,  InputGetter::Button> keymap_t;
 	typedef std::multimap<JoyData, InputGetter::Button> jmap_t;
 
 	GetInput inputGetter;
@@ -569,8 +569,6 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	ResamplerOption resamplerOption;
 	ScaleOption scaleOption;
 	VfOption vfOption;
-	BoolOption yuvOption("\t\tUse YUV overlay for (usually faster) scaling\n",
-	                     "yuv-overlay", 'y');
 	BoolOption gbaCgbOption("\t\t\tGBA CGB mode\n", "gba-cgb");
 	BoolOption forceDmgOption("\t\tForce DMG mode\n", "force-dmg");
 	BoolOption multicartCompatOption(
@@ -596,11 +594,10 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 		v.push_back(&resamplerOption);
 		v.push_back(&scaleOption);
 		v.push_back(&vfOption);
-		v.push_back(&yuvOption);
 
 		Parser parser;
-		std::for_each(v.begin(), v.end(),
-			std::bind1st(std::mem_fun(&Parser::add), &parser));
+        std::for_each(v.begin(), v.end(),
+                      std::bind1st(std::mem_fun(&Parser::add), &parser));
 
 		for (int i = 1; i < argc; ++i) {
 			if (argv[i][0] == '-') {
@@ -674,10 +671,9 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	JsOpen jsOpen(jdevnums.begin(), jdevnums.end());
 	SDL_JoystickEventState(SDL_ENABLE);
 	BlitterWrapper blitter(vfOption.filter(),
-	                       scaleOption.scale(), yuvOption.isSet(),
+	                       scaleOption.scale(),
 	                       fsOption.isSet());
 	SDL_ShowCursor(SDL_DISABLE);
-	SDL_WM_SetCaption("Gambatte SDL", 0);
 
 	return run(rateOption.rate(), latencyOption.latency(), periodsOption.periods(),
 	           resamplerOption.resampler(), blitter);
@@ -793,7 +789,7 @@ int GambatteSdl::run(long const sampleRate, int const latency, int const periods
 	AudioOut aout(sampleRate, latency, periods, resamplerInfo, audioBuf.size());
 	FrameWait frameWait;
 	SkipSched skipSched;
-	Uint8 const *const keys = SDL_GetKeyState(0);
+	Uint8 const *const keys = SDL_GetKeyboardState(0);
 	std::size_t bufsamples = 0;
 	bool audioOutBufLow = false;
 

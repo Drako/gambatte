@@ -21,7 +21,7 @@
 
 #include <SDL.h>
 
-SDLKey const * strToSdlkey(char const *str);
+SDL_Keycode const * strToSdlkey(char const *str);
 void printStrSdlkeys();
 
 #endif

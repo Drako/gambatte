@@ -21,8 +21,8 @@
 #include "videolink/vfilterinfo.h"
 #include "videolink/videolink.h"
 
-BlitterWrapper::BlitterWrapper(VfilterInfo const &vfinfo, int scale, bool yuv, bool full)
-: blitter_(vfinfo.outWidth, vfinfo.outHeight, scale, yuv, full)
+BlitterWrapper::BlitterWrapper(VfilterInfo const &vfinfo, int scale, bool full)
+: blitter_(vfinfo.outWidth, vfinfo.outHeight, scale, full)
 , cconvert_(Rgb32Conv::create(static_cast<Rgb32Conv::PixelFormat>(blitter_.inBuffer().format),
                               vfinfo.outWidth, vfinfo.outHeight))
 , vfilter_(vfinfo.create())

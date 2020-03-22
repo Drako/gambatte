@@ -30,7 +30,7 @@ class BlitterWrapper {
 public:
 	struct Buf { gambatte::uint_least32_t *pixels; std::ptrdiff_t pitch; };
 
-	BlitterWrapper(VfilterInfo const &, int scale, bool yuv, bool full);
+	BlitterWrapper(VfilterInfo const &, int scale, bool full);
 	~BlitterWrapper();
 	Buf inBuf() const;
 	void draw();

@@ -22,30 +22,18 @@
 
 struct SdlBlitter::SurfaceDeleter {
 	static void del(SDL_Surface *s) { SDL_FreeSurface(s); }
-	static void del(SDL_Overlay *o) {
-		if (o) {
-			SDL_UnlockYUVOverlay(o);
-			SDL_FreeYUVOverlay(o);
-		}
-	}
 };
 
 SdlBlitter::SdlBlitter(unsigned inwidth, unsigned inheight,
-                       int scale, bool yuv, bool startFull)
-: screen_(SDL_SetVideoMode(inwidth * scale, inheight * scale,
-                           SDL_GetVideoInfo()->vfmt->BitsPerPixel == 16 ? 16 : 32,
-                           SDL_SWSURFACE | (startFull ? SDL_FULLSCREEN : 0)))
-, surface_(screen_ && scale > 1 && !yuv
+                       int scale, bool startFull)
+: screen_ (SDL_CreateWindow("Gambatte SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, inwidth * scale, inheight * scale, startFull ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0))
+, screen_surface_(SDL_GetWindowSurface(screen_))
+, surface_(screen_surface_ && scale > 1
            ? SDL_CreateRGBSurface(SDL_SWSURFACE, inwidth, inheight,
-                                  screen_->format->BitsPerPixel, 0, 0, 0, 0)
-           : 0)
-, overlay_(screen_ && scale > 1 && yuv
-           ? SDL_CreateYUVOverlay(inwidth * 2, inheight, SDL_UYVY_OVERLAY, screen_)
-           : 0)
-{
-	if (overlay_)
-		SDL_LockYUVOverlay(overlay_.get());
+                                  screen_surface_->format->BitsPerPixel, 0, 0, 0, 0)
+           : nullptr) {
 }
+
 
 SdlBlitter::~SdlBlitter() {
 }
@@ -53,12 +41,8 @@ SdlBlitter::~SdlBlitter() {
 SdlBlitter::PixelBuffer SdlBlitter::inBuffer() const {
 	PixelBuffer pb = { 0, 0, RGB32 };
 
-	if (overlay_) {
-		pb.pixels = overlay_->pixels[0];
-		pb.format = UYVY;
-		pb.pitch = overlay_->pitches[0] >> 2;
-	} else if (SDL_Surface *s = surface_ ? surface_.get() : screen_) {
-		pb.pixels = static_cast<char *>(s->pixels) + s->offset;
+	if (SDL_Surface *s = surface_ ? surface_.get() : screen_surface_) {
+		pb.pixels = static_cast<char *>(s->pixels);
 		pb.format = s->format->BitsPerPixel == 16 ? RGB16 : RGB32;
 		pb.pitch = s->pitch / s->format->BytesPerPixel;
 	}
@@ -68,14 +52,14 @@ SdlBlitter::PixelBuffer SdlBlitter::inBuffer() const {
 
 template<typename T>
 inline void SdlBlitter::swScale() {
-	T const *src = reinterpret_cast<T *>(static_cast<char *>(surface_->pixels) + surface_->offset);
-	T       *dst = reinterpret_cast<T *>(static_cast<char *>(screen_->pixels) + screen_->offset);
+	T const *src = reinterpret_cast<T *>(static_cast<char *>(surface_->pixels));
+	T       *dst = reinterpret_cast<T *>(static_cast<char *>(screen_surface_->pixels));
 	scaleBuffer(src, dst, surface_->w, surface_->h,
-	            screen_->pitch / screen_->format->BytesPerPixel, screen_->h / surface_->h);
+	            screen_surface_->pitch / screen_surface_->format->BytesPerPixel, screen_surface_->h / surface_->h);
 }
 
 void SdlBlitter::draw() {
-	if (surface_ && screen_) {
+	if (surface_ && screen_surface_) {
 		if (surface_->format->BitsPerPixel == 16)
 			swScale<Uint16>();
 		else
@@ -84,22 +68,18 @@ void SdlBlitter::draw() {
 }
 
 void SdlBlitter::present() {
-	if (!screen_)
+	if (!screen_surface_)
 		return;
 
-	if (overlay_) {
-		SDL_Rect dstr = { 0, 0, Uint16(screen_->w), Uint16(screen_->h) };
-		SDL_UnlockYUVOverlay(overlay_.get());
-		SDL_DisplayYUVOverlay(overlay_.get(), &dstr);
-		SDL_LockYUVOverlay(overlay_.get());
-	} else {
-		SDL_UpdateRect(screen_, 0, 0, screen_->w, screen_->h);
-	}
+    SDL_UpdateWindowSurface(screen_);
 }
 
 void SdlBlitter::toggleFullScreen() {
 	if (screen_) {
-		screen_ = SDL_SetVideoMode(screen_->w, screen_->h, screen_->format->BitsPerPixel,
-		                           screen_->flags ^ SDL_FULLSCREEN);
+	    auto const flags = SDL_GetWindowFlags(screen_);
+	    if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
+	        SDL_SetWindowFullscreen(screen_, 0);
+	    else
+	        SDL_SetWindowFullscreen(screen_, SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
 }

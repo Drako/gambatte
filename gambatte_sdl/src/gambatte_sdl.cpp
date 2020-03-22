@@ -597,7 +597,7 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 
 		Parser parser;
         std::for_each(v.begin(), v.end(),
-                      std::bind1st(std::mem_fun(&Parser::add), &parser));
+                      std::bind(&Parser::add, &parser, std::placeholders::_1));
 
 		for (int i = 1; i < argc; ++i) {
 			if (argv[i][0] == '-') {

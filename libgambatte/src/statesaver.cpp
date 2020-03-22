@@ -91,8 +91,7 @@ void write(std::ofstream &file, unsigned char const *data, std::size_t size) {
 
 void write(std::ofstream &file, bool const *data, std::size_t size) {
 	put24(file, size);
-	std::for_each(data, data + size,
-		std::bind1st(std::mem_fun(&std::ofstream::put), &file));
+	std::for_each(data, data + size, std::bind(&std::ostream::put, &file, std::placeholders::_1));
 }
 
 unsigned long get24(std::ifstream &file) {
